@@ -13,22 +13,16 @@ import matplotlib.pyplot as plt
 import plotly.express as px
 
 # Initialisation des options du navigateur Selenium
-# Configurer Chrome en mode headless
-chrome_options = Options()
-chrome_options.add_argument("--headless")  # Mode sans interface
-chrome_options.add_argument("--no-sandbox")  # Évite des erreurs sur les serveurs
-chrome_options.add_argument("--disable-dev-shm-usage")  # Évite les problèmes de mémoire partagée
-chrome_options.add_argument("--disable-gpu")  # Désactive l'accélération GPU
-chrome_options.add_argument("--window-size=1920x1080")  # Définit une résolution correcte
-
-# Démarrer le WebDriver avec les options
-service = Service(ChromeDriverManager().install())
+options = Options()
+options.add_argument("--headless")  # Mode sans interface graphique
+options.add_argument("--disable-gpu")  # Evite certains bugs d'affichage
+options.add_argument("--no-sandbox")  # Nécessaire pour exécuter en mode root
 
 # URLs des catégories
 URLS = {
-    "Computers": "https://www.expat-dakar.com/ordinateurs?page=.html",
-    "Telephones": "https://www.expat-dakar.com/telephones?page=.html",
-    "Cinema": "https://www.expat-dakar.com/cinema?page=.html"
+    "Computers": "https://www.expat-dakar.com/ordinateurs?page=",
+    "Telephones": "https://www.expat-dakar.com/telephones?page=",
+    "Cinema": "https://www.expat-dakar.com/cinema?page="
 }
 
 # Fonction de scraping
@@ -38,8 +32,7 @@ def scrape_expats_dakar(category, pages):
     data = []
     
     # Initialisation de Selenium
-    driver = webdriver.Chrome(service=service, options=chrome_options)
-
+    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
     
     try:
         for p in range(1, pages + 1):
@@ -85,6 +78,7 @@ def scrape_expats_dakar(category, pages):
         driver.quit()  # Fermer Selenium après exécution
 
     return pd.DataFrame(data)
+
 
 # Interface Streamlit
 st.markdown("<h1 style='text-align: center; color: black;'>MY DATA SCRAPER APP</h1>", unsafe_allow_html=True) 
