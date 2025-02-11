@@ -49,7 +49,7 @@ def scrape_expats_dakar(category, pages):
                     print(f"Erreur lors du scraping : {e}")
                     pass
 
-return pd.DataFrame(data)
+    return pd.DataFrame(data)
 
 # Interface Streamlit
 st.markdown("<h1 style='text-align: center; color: black;'>MY DATA SCRAPER APP</h1>", unsafe_allow_html=True) 
