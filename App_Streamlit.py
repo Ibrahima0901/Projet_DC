@@ -13,7 +13,7 @@ URLS = {
 }
 
 data = []
-def scrape_expats_dakar(category, pages)
+def scrape_expats_dakar(category, pages):
     for category, base_url in URLS.items():
         try:
             for p in range(1, pages+1):
