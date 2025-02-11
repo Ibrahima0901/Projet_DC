@@ -1,4 +1,3 @@
-pip install selenium webdriver-manager
 import pandas as pd
 import streamlit as st
 import time
