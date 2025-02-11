@@ -32,7 +32,7 @@ def scrape_expats_dakar(category, pages):
     data = []
     
     # Initialisation de Selenium
-      driver = webdriver.Firefox(service=FirefoxService(GeckoDriverManager().install()), options=options)
+    driver = webdriver.Firefox(service=FirefoxService(GeckoDriverManager().install()), options=options)
     
     try:
         for p in range(1, pages + 1):
