@@ -1,15 +1,11 @@
 numpy
 bs4
 requests
-scipy
 matplotlib
 pandas
 streamlit
-ChromeDriverManager
-seaborn
-pybase64
 BeautifulSoup 
-webdriver_manager 
+silenium
 matplotlib
 plotly
 
