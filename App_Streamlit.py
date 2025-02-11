@@ -4,6 +4,7 @@ import requests
 from requests import get
 from bs4 import BeautifulSoup as bs
 import matplotlib.pyplot as plt
+import time
 
 # URLs des catégories
 URLS = {
