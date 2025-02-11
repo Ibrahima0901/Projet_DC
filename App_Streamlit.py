@@ -43,7 +43,6 @@ def scrape_expats_dakar(category, pages):
                         print(f"Erreur lors du scraping : {e}")
                         pass
         finally:
-              response.quit()
         return pd.DataFrame(data)
         
 # Interface Streamlit
