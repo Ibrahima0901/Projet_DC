@@ -17,13 +17,13 @@ def scrape_expats_dakar(category, pages):
     """Scrape les annonces de la catégorie choisie sur expat-dakar.com"""
     url_base = URLS[category]
     data = []
-    
     for p in range(1, pages + 1):
         url = f"{url_base}{p}"
+        time.sleep(5)
         response = requests.get(url)
         soup = bs(response.content, 'html.parser')
         infos = soup.find_all('div', class_='listings-cards__list-item')
-
+    
         for info in infos:
             try:
                 details = info.find('div', class_='listing-card__header__title').text.strip()
@@ -37,21 +37,19 @@ def scrape_expats_dakar(category, pages):
                 adresse = ' '.join(info.find('div', class_="listing-card__header__location").text.strip().split()).replace(',', '')
                 # Lien de l'image
                 image_lien = info.find('img', class_='listing-card__image__resource vh-img')['src']
-
                 data.append({
-                    'details': details,
-                    'etat': etat,
-                    'marque': marque,
-                    'prix': prix,
-                    'adresse': adresse,
-                    'image_lien': image_lien
-                })
-
+                        'details': details,
+                        'etat': etat,
+                        'marque': marque,
+                        'prix': prix,
+                        'adresse': adresse,
+                        'image_lien': image_lien
+                    })
             except Exception as e:
-                print(f"Erreur lors du scraping : {e}")
-                pass
+                    print(f"Erreur lors du scraping : {e}")
+                    pass
 
-    return pd.DataFrame(data)
+return pd.DataFrame(data)
 
 # Interface Streamlit
 st.markdown("<h1 style='text-align: center; color: black;'>MY DATA SCRAPER APP</h1>", unsafe_allow_html=True) 
