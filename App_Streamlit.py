@@ -3,6 +3,7 @@ import pandas as pd
 import streamlit as st
 import matplotlib.pyplot as plt
 from scrapy.crawler import CrawlerProcess
+from scrapy.utils.project import get_project_settings
 
 # URLs des catégories
 URLS = {
@@ -11,30 +12,38 @@ URLS = {
     "Cinema": "https://www.expat-dakar.com/cinema?page="
 }
 
-# Classe Scrapy pour le scraping
-class ExpatDakarSpider(scrapy.Spider):
-    name = "expat_dakar"
-    start_urls = []
-    data = []
+class ExpatsDakarSpider(scrapy.Spider):
+    name = 'expats_dakar'
 
-    def __init__(self, category, pages, *args, **kwargs):
-        super(ExpatDakarSpider, self).__init__(*args, **kwargs)
-        self.category = category
-        self.pages = pages
-        self.start_urls = [f"{URLS[self.category]}{page}" for page in range(1, self.pages + 1)]
+    def start_requests(self):
+        categories = {
+            "Computers": "https://www.expat-dakar.com/ordinateurs?page=",
+            "Telephones": "https://www.expat-dakar.com/telephones?page=",
+            "Cinema": "https://www.expat-dakar.com/cinema?page="
+        }
+
+        # Gérer les pages à scraper
+        for category, url in categories.items():
+              for p in range(1, pages + 1):
+              yield scrapy.Request(url=f"{url}{page}", callback=self.parse, meta={'category': category})
 
     def parse(self, response):
-        containers = response.css('.listings-cards__list-item')
+        data = []
+        category = response.meta['category']
+
+        # Extraction des données pour chaque page
+        containers = response.css(".listings-cards__list-item")
         for container in containers:
             try:
                 details = container.css('.listing-card__header__title::text').get().strip()
-                etat = container.css('.listing-card__header__tags__item--condition_new::text').get().strip()
-                marque = container.css('.listing-card__header__tags::text').get().strip().replace(etat, '')
-                adresse = ' '.join(container.css('.listing-card__header__location::text').get().split()).replace(',', '')
-                prix = container.css('.listing-card__price::text').get().strip().replace('F Cfa','').replace(' ','')
-                image_lien = container.css('.listing-card__image__resource.vh-img::attr(src)').get()
-
+                etat = container.css(".listing-card__header__tags__item--condition_new::text").get().strip()
+                marque = container.css(".listing-card__header__tags::text").get().strip().replace(etat, '')
+                adresse = ' '.join(container.css('.listing-card__header__location::text').get().split())
+                prix = container.css(".listing-card__price::text").get().strip().replace('F Cfa', '').replace(' ', '')
+                image_lien = container.css(".listing-card__image__resource.vh-img::attr(src)").get()
+                
                 dic = {
+                    'category': category,
                     'details': details,
                     'etat': etat,
                     'marque': marque,
@@ -42,14 +51,24 @@ class ExpatDakarSpider(scrapy.Spider):
                     "adresse": adresse,
                     "lien image": image_lien
                 }
-                self.data.append(dic)
-            except:
-                pass
+                
+                data.append(dic)
+            except Exception as e:
+                self.logger.error(f"Error parsing container: {e}")
 
-    def close(self, reason):
-        # Enregistrer les données dans un fichier CSV une fois le scraping terminé
-        df = pd.DataFrame(self.data)
-        df.to_csv(f"data_{self.category}.csv", index=False)
+        # Retourner les données extraites
+        yield from data
+
+        # Suivi des pages suivantes (pagination)
+        next_page = response.css('a.next::attr(href)').get()
+        if next_page:
+            yield response.follow(next_page, callback=self.parse, meta={'category': category})
+
+# Initialiser Scrapy CrawlerProcess
+process = CrawlerProcess(get_project_settings())
+process.crawl(ExpatsDakarSpider)
+process.start()
+
 
 
 # Interface Streamlit
