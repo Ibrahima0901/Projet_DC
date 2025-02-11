@@ -1,13 +1,9 @@
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
-import requests
+from requests_html import HTMLSession
 from bs4 import BeautifulSoup as bs
 import time
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
 
 URLS = {
     "Computers": "https://www.expat-dakar.com/ordinateurs?page=",
@@ -15,17 +11,16 @@ URLS = {
     "Cinema": "https://www.expat-dakar.com/cinema?page="
 }
 
-def scrape_expats_dakar_selenium(urls, pages):
+def scrape_expats_dakar_requests_html(urls, pages):
+    session = HTMLSession()
     data = []
-    driver = webdriver.Chrome()  # Assurez-vous d'avoir installé le bon driver pour votre navigateur
     for category, base_url in urls.items():
         for p in range(1, pages+1):
             url = f"{base_url}{p}"
             time.sleep(5)
-            driver.get(url)
-            Page_source = driver.page_source
-            WebDriverWait(driver, 10).until(
-                EC.presence_of_element_located((By.CLASS_NAME, "listings-cards__list-item")))
+            response = session.get(url)
+            response.html.render(sleep=2)  # Rend le JavaScript
+            Page_source = response.html.html
             soup = bs(Page_source, 'html.parser')
             infos = soup.find_all('div', class_='listings-cards__list-item')
             for info in infos:
@@ -47,7 +42,6 @@ def scrape_expats_dakar_selenium(urls, pages):
                 except Exception as e:
                     print(f"Erreur lors du scraping : {e}")
                     pass
-    driver.quit()
     return pd.DataFrame(data)
 
 # Interface Streamlit
@@ -58,7 +52,7 @@ st.sidebar.markdown("**User Input Features**")
 pages = st.sidebar.number_input("Number of pages to scrape", min_value=1, value=2)
 category = st.sidebar.selectbox(
     "How would you like to scrape",
-    ("Selenium & beautifulSoup","Webscrapper","Dashboard of the data","Fill the form"))
+    ("Requests-HTML","Webscrapper","Dashboard of the data","Fill the form"))
 
 # Ajout des boutons pour chaque catégorie
 col1, col2, col3 = st.columns(3)
@@ -68,11 +62,11 @@ df_computers = pd.DataFrame()
 df_phones = pd.DataFrame()
 df_cinema = pd.DataFrame()
 
-if category == "Selenium & beautifulSoup":
+if category == "Requests-HTML":
     with col1:
         if st.button("Scrape Computers"):
             st.write("Scraping **Computers** data... This may take a few minutes.")
-            df_computers = scrape_expats_dakar_selenium({"Computers": URLS["Computers"]}, pages)
+            df_computers = scrape_expats_dakar_requests_html({"Computers": URLS["Computers"]}, pages)
             if not df_computers.empty:
                 st.success(f"Scraped {len(df_computers)} items!")
                 st.dataframe(df_computers)
@@ -84,7 +78,7 @@ if category == "Selenium & beautifulSoup":
     with col2:
         if st.button("Scrape Telephones"):
             st.write("Scraping **Telephones** data... This may take a few minutes.")
-            df_phones = scrape_expats_dakar_selenium({"Telephones": URLS["Telephones"]}, pages)
+            df_phones = scrape_expats_dakar_requests_html({"Telephones": URLS["Telephones"]}, pages)
             if not df_phones.empty:
                 st.success(f"Scraped {len(df_phones)} items!")
                 st.dataframe(df_phones)
@@ -96,7 +90,7 @@ if category == "Selenium & beautifulSoup":
     with col3:
         if st.button("Scrape Cinema"):
             st.write("Scraping **Cinema** data... This may take a few minutes.")
-            df_cinema = scrape_expats_dakar_selenium({"Cinema": URLS["Cinema"]}, pages)
+            df_cinema = scrape_expats_dakar_requests_html({"Cinema": URLS["Cinema"]}, pages)
             if not df_cinema.empty:
                 st.success(f"Scraped {len(df_cinema)} items!")
                 st.dataframe(df_cinema)
@@ -157,9 +151,3 @@ elif category == "Dashboard of the data":
 
     # Top 5 des marques les plus vendues (si colonne 'Marque' existe)
     if 'Marque' in phone_data.columns:
-        st.subheader("🏆 Marques de téléphones les plus vendues")
-        top_brands = phone_data['Marque'].value_counts().head(5)
-        st.bar_chart(top_brands)
-
-elif category == "Fill the form":
-    st.markdown('[Formulaire](https://ee.kobotoolbox.org/x/OHZQDGcE)')
