@@ -1,16 +1,8 @@
 import scrapy
-import pandas as pd
-import streamlit as st
-import matplotlib.pyplot as plt
-from scrapy.crawler import CrawlerProcess
+from scrapy.crawler import CrawlerRunner
 from scrapy.utils.project import get_project_settings
-
-# URLs des catégories
-URLS = {
-    "Computers": "https://www.expat-dakar.com/ordinateurs?page=",
-    "Telephones": "https://www.expat-dakar.com/telephones?page=",
-    "Cinema": "https://www.expat-dakar.com/cinema?page="
-}
+from twisted.internet import defer
+from twisted.internet import reactor
 
 class ExpatsDakarSpider(scrapy.Spider):
     name = 'expats_dakar'
@@ -22,16 +14,14 @@ class ExpatsDakarSpider(scrapy.Spider):
             "Cinema": "https://www.expat-dakar.com/cinema?page="
         }
 
-        # Gérer les pages à scraper
         for category, url in categories.items():
-              for p in range(1, pages + 1):
-                  yield scrapy.Request(url=f"{url}{page}", callback=self.parse, meta={'category': category})
+            for page in range(1, 6):  # Suppose we want to scrape the first 5 pages of each category
+                yield scrapy.Request(url=f"{url}{page}", callback=self.parse, meta={'category': category})
 
     def parse(self, response):
         data = []
         category = response.meta['category']
 
-        # Extraction des données pour chaque page
         containers = response.css(".listings-cards__list-item")
         for container in containers:
             try:
@@ -41,7 +31,7 @@ class ExpatsDakarSpider(scrapy.Spider):
                 adresse = ' '.join(container.css('.listing-card__header__location::text').get().split())
                 prix = container.css(".listing-card__price::text").get().strip().replace('F Cfa', '').replace(' ', '')
                 image_lien = container.css(".listing-card__image__resource.vh-img::attr(src)").get()
-                
+
                 dic = {
                     'category': category,
                     'details': details,
@@ -56,7 +46,6 @@ class ExpatsDakarSpider(scrapy.Spider):
             except Exception as e:
                 self.logger.error(f"Error parsing container: {e}")
 
-        # Retourner les données extraites
         yield from data
 
         # Suivi des pages suivantes (pagination)
@@ -64,10 +53,18 @@ class ExpatsDakarSpider(scrapy.Spider):
         if next_page:
             yield response.follow(next_page, callback=self.parse, meta={'category': category})
 
-# Initialiser Scrapy CrawlerProcess
-process = CrawlerProcess(get_project_settings())
-process.crawl(ExpatsDakarSpider)
-process.start()
+# Initialisation du CrawlerRunner
+runner = CrawlerRunner(get_project_settings())
+
+# Démarrer le crawling
+@defer.inlineCallbacks
+def crawl():
+    yield runner.crawl(ExpatsDakarSpider)
+
+# Exécution du crawler sans interférer avec Streamlit
+crawl().addCallback(lambda _: reactor.stop())
+reactor.run()
+
 
 
 
