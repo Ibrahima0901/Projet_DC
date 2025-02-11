@@ -1,7 +1,6 @@
 import pandas as pd
 import streamlit as st
 import time
-dotnet add package Selenium.WebDriver.ChromeDriver --version 133.0.6943.5300
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
