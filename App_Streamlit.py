@@ -1,50 +1,89 @@
-import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
-from bs4 import BeautifulSoup as bs
+import streamlit as st
 import time
-from playwright.sync_api import sync_playwright
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from bs4 import BeautifulSoup as bs
+from webdriver_manager.chrome import ChromeDriverManager
+import matplotlib.pyplot as plt
+import plotly.express as px
 
+# Initialisation des options du navigateur Selenium
+# Configurer Chrome en mode headless
+chrome_options = Options()
+chrome_options.add_argument("--headless")  # Mode sans interface
+chrome_options.add_argument("--no-sandbox")  # Évite des erreurs sur les serveurs
+chrome_options.add_argument("--disable-dev-shm-usage")  # Évite les problèmes de mémoire partagée
+chrome_options.add_argument("--disable-gpu")  # Désactive l'accélération GPU
+chrome_options.add_argument("--window-size=1920x1080")  # Définit une résolution correcte
+
+# Démarrer le WebDriver avec les options
+service = Service(ChromeDriverManager().install())
+
+# URLs des catégories
 URLS = {
-    "Computers": "https://www.expat-dakar.com/ordinateurs?page=",
-    "Telephones": "https://www.expat-dakar.com/telephones?page=",
-    "Cinema": "https://www.expat-dakar.com/cinema?page="
+    "Computers": "https://www.expat-dakar.com/ordinateurs?page=.html",
+    "Telephones": "https://www.expat-dakar.com/telephones?page=.html",
+    "Cinema": "https://www.expat-dakar.com/cinema?page=.html"
 }
 
-def scrape_expats_dakar(urls, pages):
+# Fonction de scraping
+def scrape_expats_dakar(category, pages):
+    """Scrape les annonces de la catégorie choisie sur expat-dakar.com"""
+    url_base = URLS[category]
     data = []
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        page = browser.new_page()
-        for category, base_url in urls.items():
-            for p in range(1, pages+1):
-                url = f"{base_url}{p}"
-                time.sleep(5)
-                page.goto(url)
-                page.wait_for_selector(".listings-cards__list-item")
-                Page_source = page.content()
-                soup = bs(Page_source, 'html.parser')
-                infos = soup.find_all('div', class_='listings-cards__list-item')
-                for info in infos:
-                    try:
-                        # Détails de l'annonce
-                        details = info.find('div', class_='listing-card__header__title').text.strip()
-                        # État de l'annonce
-                        etat = info.find('span', class_='listing-card__header__tags__item listing-card__header__tags__item--condition listing-card__header__tags__item--condition_new').text.strip()
-                        # Marque de l'annonce
-                        marque = info.find('div', class_='listing-card__header__tags').text.strip().replace(etat,'')
-                        # Prix
-                        prix = info.find('span', class_='listing-card__price__deal').text.strip().replace('F Cfa','').replace(' ','')
-                        # Adresse
-                        adresse = ' '.join(info.find('div', class_="listing-card__header__location").text.strip().split()).replace(',', '')
-                        # Lien de l'image
-                        image_lien = info.find('img', class_='listing-card__image__resource vh-img')['src']
-                        dic = {'category': category, 'details': details, 'etat': etat, 'marque': marque, 'prix': prix, 'adresse': adresse, 'image_lien': image_lien}
-                        data.append(dic)
-                    except Exception as e:
-                        print(f"Erreur lors du scraping : {e}")
-                        pass
-        browser.close()
+    
+    # Initialisation de Selenium
+    driver = webdriver.Chrome(service=service, options=chrome_options)
+
+    
+    try:
+        for p in range(1, pages + 1):
+            url = f"{url_base}{p}"
+            driver.get(url)
+            time.sleep(5)  # Pause pour permettre le chargement complet de la page
+            
+            # Attendre que les annonces soient visibles
+            WebDriverWait(driver, 20).until(
+                EC.presence_of_element_located((By.CLASS_NAME, "listings-cards__list-item"))
+            )
+            
+            soup = bs(driver.page_source, 'html.parser')
+            infos = soup.find_all('div', class_='listings-cards__list-item')
+
+            for info in infos:
+                try:
+                    details = info.find('div', class_='listing-card__header__title').text.strip()
+                    # État de l'annonce
+                    etat = info.find('span', class_='listing-card__header__tags__item listing-card__header__tags__item--condition listing-card__header__tags__item--condition_new').text.strip()
+                    # Marque de l'annonce
+                    marque =info.find('div', class_='listing-card__header__tags').text.strip().replace(etat,'')
+                    # Prix
+                    prix = info.find('span', class_='listing-card__price').text.strip().replace('F Cfa','').replace(' ','')
+                    # Adresse
+                    adresse = ' '.join(info.find('div', class_="listing-card__header__location").text.strip().split()).replace(',', '')
+                    # Lien de l'image
+                    image_lien = info.find('img', class_='listing-card__image__resource vh-img')['src']
+
+                    data.append({
+                        'details': details,
+                        'etat': etat,
+                        'marque': marque,
+                        'prix': prix,
+                        'adresse': adresse,
+                        'image_lien': image_lien
+                    })
+
+                except Exception as e:
+                    print(f"Erreur lors du scraping : {e}")
+                    pass
+    finally:
+        driver.quit()  # Fermer Selenium après exécution
+
     return pd.DataFrame(data)
 
 # Interface Streamlit
@@ -55,7 +94,8 @@ st.sidebar.markdown("**User Input Features**")
 pages = st.sidebar.number_input("Number of pages to scrape", min_value=1, value=2)
 category = st.sidebar.selectbox(
     "How would you like to scrape",
-    ("BeautifulSoup & Playwright", "Webscrapper", "Dashboard of the data", "Fill the form"))
+    ("Selenium & beautifulSoup","Webscrapper","Dashboard of the data","Fill the form"))
+
 
 # Ajout des boutons pour chaque catégorie
 col1, col2, col3 = st.columns(3)
@@ -64,12 +104,11 @@ col1, col2, col3 = st.columns(3)
 df_computers = pd.DataFrame()
 df_phones = pd.DataFrame()
 df_cinema = pd.DataFrame()
-
-if category == "BeautifulSoup & Playwright":
+if category == "Selenium & beautifulSoup":
     with col1:
         if st.button("Scrape Computers"):
             st.write("Scraping **Computers** data... This may take a few minutes.")
-            df_computers = scrape_expats_dakar({"Computers": URLS["Computers"]}, pages)
+            df_computers = scrape_expats_dakar("Computers", pages)
             if not df_computers.empty:
                 st.success(f"Scraped {len(df_computers)} items!")
                 st.dataframe(df_computers)
@@ -81,7 +120,7 @@ if category == "BeautifulSoup & Playwright":
     with col2:
         if st.button("Scrape Telephones"):
             st.write("Scraping **Telephones** data... This may take a few minutes.")
-            df_phones = scrape_expats_dakar({"Telephones": URLS["Telephones"]}, pages)
+            df_phones = scrape_expats_dakar("Telephones", pages)
             if not df_phones.empty:
                 st.success(f"Scraped {len(df_phones)} items!")
                 st.dataframe(df_phones)
@@ -93,7 +132,7 @@ if category == "BeautifulSoup & Playwright":
     with col3:
         if st.button("Scrape Cinema"):
             st.write("Scraping **Cinema** data... This may take a few minutes.")
-            df_cinema = scrape_expats_dakar({"Cinema": URLS["Cinema"]}, pages)
+            df_cinema = scrape_expats_dakar("Cinema", pages)
             if not df_cinema.empty:
                 st.success(f"Scraped {len(df_cinema)} items!")
                 st.dataframe(df_cinema)
@@ -101,7 +140,6 @@ if category == "BeautifulSoup & Playwright":
                 st.download_button("Download Cinema Data", csv_cinema, "Cinema_data.csv", "text/csv")
             else:
                 st.warning("No data found for Cinema.")
-
 elif category == "Webscrapper":
 
     def load_(dataframe, title, key):
@@ -125,8 +163,8 @@ elif category == "Webscrapper":
             # Afficher le dataframe paginé
             st.dataframe(dataframe.iloc[start_idx:end_idx])
 
-    # Charger les données
-    load_(pd.read_csv('Data/Scrape_Ordinateur_Expat_dakar.csv'),'Computers data', '1')
+# Charger les données
+    load_(pd.read_csv('Data/Scrape_Ordinateur_Expat_dakar.csv'), 'Computers data', '1')
     load_(pd.read_csv('Data/Scrape_Telephone_Expat_Dakar.csv'), 'Telephones data', '2')
     load_(pd.read_csv('Data/Scrape_Cinema_Expat_Dakar.csv'), 'Cinema data', '3')
 
