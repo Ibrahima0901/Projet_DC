@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
-from requests_html import HTMLSession
 from bs4 import BeautifulSoup as bs
 import time
 from playwright.sync_api import sync_playwright
