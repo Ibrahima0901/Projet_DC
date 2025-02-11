@@ -19,7 +19,7 @@ data=[]
 def scrape_expats_dakar(category, pages):
     data =[]
     for p in range(1, pages + 1):
-        url = f"{url_base}{p}"
+        url = f"{url_base}{pages}"
         driver.get(url)
         containers = driver.find_elements(By.CSS_SELECTOR, "[class= 'listings-cards__list-item']")
         for container in containers:
