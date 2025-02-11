@@ -6,6 +6,6 @@ pandas
 streamlit
 beautifulsoup4
 selenium
-webdriver
+webdriver_manager
 time
 plotly
