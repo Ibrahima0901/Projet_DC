@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from requests_html import HTMLSession
 from bs4 import BeautifulSoup as bs
 import time
+from playwright.sync_api import sync_playwright
 
 URLS = {
     "Computers": "https://www.expat-dakar.com/ordinateurs?page=",
@@ -11,40 +12,40 @@ URLS = {
     "Cinema": "https://www.expat-dakar.com/cinema?page="
 }
 
-def scrape_expats_dakar_requests_html(urls, pages):
-    session = HTMLSession()
+def scrape_expats_dakar(urls, pages):
     data = []
-    for category, base_url in urls.items():
-        for p in range(1, pages+1):
-            url = f"{base_url}{p}"
-            time.sleep(5)
-            response = session.get(url)
-            response.html.render(sleep=2)  # Rend le JavaScript
-            Page_source = response.html.html
-            soup = bs(Page_source, 'html.parser')
-            infos = soup.find_all('div', class_='listings-cards__list-item')
-            for info in infos:
-                try:
-                    # Détails de l'annonce
-                    details = info.find('div', class_='listing-card__header__title').text.strip()
-                    # État de l'annonce
-                    etat = info.find('span', class_='listing-card__header__tags__item listing-card__header__tags__item--condition listing-card__header__tags__item--condition_new').text.strip()
-                    # Marque de l'annonce
-                    marque = info.find('div', class_='listing-card__header__tags').text.strip().replace(etat,'')
-                    # Prix
-                    prix = info.find('span', class_='listing-card__price__deal').text.strip().replace('F Cfa','').replace(' ','')
-                    # Adresse
-                    adresse = ' '.join(info.find('div', class_="listing-card__header__location").text.strip().split()).replace(',', '')
-                    # Lien de l'image
-                    image_lien = info.find('img', class_='listing-card__image__resource vh-img')['src']
-                    dic = {'category': category, 'details': details, 'etat': etat, 'marque': marque, 'prix': prix, 'adresse': adresse, 'image_lien': image_lien}
-                    data.append(dic)
-                except Exception as e:
-                    print(f"Erreur lors du scraping : {e}")
-                    pass
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
+        for category, base_url in urls.items():
+            for p in range(1, pages+1):
+                url = f"{base_url}{p}"
+                time.sleep(5)
+                page.goto(url)
+                page.wait_for_selector(".listings-cards__list-item")
+                Page_source = page.content()
+                soup = bs(Page_source, 'html.parser')
+                infos = soup.find_all('div', class_='listings-cards__list-item')
+                for info in infos:
+                    try:
+                        # Détails de l'annonce
+                        details = info.find('div', class_='listing-card__header__title').text.strip()
+                        # État de l'annonce
+                        etat = info.find('span', class_='listing-card__header__tags__item listing-card__header__tags__item--condition listing-card__header__tags__item--condition_new').text.strip()
+                        # Marque de l'annonce
+                        marque = info.find('div', class_='listing-card__header__tags').text.strip().replace(etat,'')
+                        # Prix
+                        prix = info.find('span', class_='listing-card__price__deal').text.strip().replace('F Cfa','').replace(' ','')
+                        # Adresse
+                        adresse = ' '.join(info.find('div', class_="listing-card__header__location").text.strip().split()).replace(',', '')
+                        # Lien de l'image
+                        image_lien = info.find('img', class_='listing-card__image__resource vh-img')['src']
+                        dic = {'category': category, 'details': details, 'etat': etat, 'marque': marque, 'prix': prix, 'adresse': adresse, 'image_lien': image_lien}
+                        data.append(dic)
+                        print(f"Erreur lors du scraping : {e}")
+                        pass
+        browser.close()
     return pd.DataFrame(data)
-
-
 # Interface Streamlit
 st.markdown("<h1 style='text-align: center; color: black;'>MY DATA SCRAPER APP</h1>", unsafe_allow_html=True) 
 st.markdown("This app scrapes and downloads data from Expat-Dakar.")
