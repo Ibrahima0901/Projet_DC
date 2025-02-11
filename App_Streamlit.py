@@ -14,39 +14,42 @@ URLS = {
     "Telephones": "https://www.expat-dakar.com/telephones?page=",
     "Cinema": "https://www.expat-dakar.com/cinema?page="
 }
+
+# Initialisation du driver Selenium
+chrome_options = Options()
+chrome_options.add_argument("--headless")  # Exécuter en mode headless
+driver = webdriver.Chrome(options=chrome_options)
+
 # Fonction de scraping
-data=[]
 def scrape_expats_dakar(category, pages):
-    data =[]
+    data = []
     for p in range(1, pages + 1):
-        url = f"{url_base}{pages}"
+        url = f"{URLS[category]}{p}"
         driver.get(url)
-        containers = driver.find_elements(By.CSS_SELECTOR, "[class= 'listings-cards__list-item']")
+        containers = driver.find_elements(By.CSS_SELECTOR, "[class='listings-cards__list-item']")
         for container in containers:
             try:
-               
-                details=container.find_element(By.CLASS_NAME,'listing-card__header__title').text.strip()
-                etat=container.find_element(By.CSS_SELECTOR,"[class='listing-card__header__tags__item listing-card__header__tags__item--condition listing-card__header__tags__item--condition_new']").text.strip()
-                marque =container.find_element(By.CLASS_NAME, 'listing-card__header__tags').text.strip().replace(etat,'')
-                adresse =' '.join (container.find_element(By.CLASS_NAME,'listing-card__header__location')).text.strip().split().replace(',', '')
-                prix =container.find_element(By.CSS_SELECTOR,"[class='listing-card__price']").text.strip().replace('F Cfa','').replace(' ','')
-                image_lien =container.find_element(By.CSS_SELECTOR,"[class=' listing-card__image__resource vh-img ']")['src']
-                dic = {'details':details,'etat':etat,'marque':marque,'prix':prix,"adresse":adresse,"lien image":image_lien}
+                details = container.find_element(By.CLASS_NAME, 'listing-card__header__title').text.strip()
+                etat = container.find_element(By.CSS_SELECTOR, "[class='listing-card__header__tags__item listing-card__header__tags__item--condition listing-card__header__tags__item--condition_new']").text.strip()
+                marque = container.find_element(By.CLASS_NAME, 'listing-card__header__tags').text.strip().replace(etat, '')
+                adresse = ' '.join(container.find_element(By.CLASS_NAME, 'listing-card__header__location').text.strip().split()).replace(',', '')
+                prix = container.find_element(By.CSS_SELECTOR, "[class='listing-card__price']").text.strip().replace('F Cfa', '').replace(' ', '')
+                image_lien = container.find_element(By.CSS_SELECTOR, "[class='listing-card__image__resource vh-img']").get_attribute('src')
+                dic = {'details': details, 'etat': etat, 'marque': marque, 'prix': prix, "adresse": adresse, "lien image": image_lien}
                 data.append(dic)
-            except:
-                pass
+            except Exception as e:
+                st.warning(f"Erreur lors de l'extraction des données: {e}")
     return pd.DataFrame(data)
 
-
 # Interface Streamlit
-st.markdown("<h1 style='text-align: center; color: black;'>MY DATA SCRAPER APP</h1>", unsafe_allow_html=True) 
+st.markdown("<h1 style='text-align: center; color: black;'>MY DATA SCRAPER APP</h1>", unsafe_allow_html=True)
 st.markdown("This app scrapes and downloads data from Expat-Dakar.")
 
 st.sidebar.markdown("**User Input Features**")
 pages = st.sidebar.number_input("Number of pages to scrape", min_value=1, value=2)
 category = st.sidebar.selectbox(
     "How would you like to scrape",
-    ("Selenium & beautifulSoup","Webscrapper","Dashboard of the data","Fill the form"))
+    ("Selenium & beautifulSoup", "Webscrapper", "Dashboard of the data", "Fill the form"))
 
 # Ajout des boutons pour chaque catégorie
 col1, col2, col3 = st.columns(3)
@@ -149,3 +152,6 @@ elif category == "Dashboard of the data":
 
 elif category == "Fill the form":
     st.page_link("https://ee.kobotoolbox.org/x/OHZQDGcE", label="Google", icon="🌎")
+
+# Fermer le driver Selenium à la fin
+driver.quit()
