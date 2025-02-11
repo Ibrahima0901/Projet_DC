@@ -46,9 +46,8 @@ def scrape_expats_dakar(category, pages):
                         'adresse': adresse,
                         'image_lien': image_lien
                     })
-            except Exception as e:
-                    print(f"Erreur lors du scraping : {e}")
-                    pass
+            except :
+                 pass
 
     return pd.DataFrame(data)
 
