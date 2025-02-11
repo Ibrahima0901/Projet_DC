@@ -25,7 +25,7 @@ class ExpatsDakarSpider(scrapy.Spider):
         # Gérer les pages à scraper
         for category, url in categories.items():
               for p in range(1, pages + 1):
-              yield scrapy.Request(url=f"{url}{page}", callback=self.parse, meta={'category': category})
+                  yield scrapy.Request(url=f"{url}{page}", callback=self.parse, meta={'category': category})
 
     def parse(self, response):
         data = []
