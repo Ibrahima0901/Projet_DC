@@ -127,8 +127,8 @@ elif category == "Webscrapper":
 
     # Charger les données
     load_(pd.read_csv('Data/Scrape_Ordinateur_Expat_dakar.csv'),('Computers data', '1')
-    load_(pd.read_csv('Data/Scrape_Telephone_Expat_Dakar.csv'), 'Telephones data', '2')
-    load_(pd.read_csv('Data/Scrape_Cinema_Expat_Dakar.csv'), 'Cinema data', '3')
+    load_(pd.read_csv('Data/Scrape_Telephone_Expat_Dakar.csv'), ('Telephones data', '2')
+    load_(pd.read_csv('Data/Scrape_Cinema_Expat_Dakar.csv'), ('Cinema data', '3')
 
 elif category == "Dashboard of the data":
         computer_data= pd.read_csv('Data/Scrape_Ordinateur_Expat_dakar.csv')
