@@ -14,7 +14,6 @@ import plotly.express as px
 
 # Initialisation des options du navigateur Selenium
 # Configurer Chrome en mode headless
-driver_path = ChromeDriverManager(version="133.0.6943.60").install()
 chrome_options = Options()
 chrome_options.add_argument("--headless")  # Mode sans interface
 chrome_options.add_argument("--no-sandbox")  # Évite des erreurs sur les serveurs
