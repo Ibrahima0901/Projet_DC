@@ -14,44 +14,25 @@ URLS = {
 }
 # Fonction de scraping
 data=[]
-def scrape_expats_dakar(category, num_pages):
-    """Scrape les annonces de la catégorie choisie sur expat-dakar.com"""
-    url_base = URLS[category]
-    df = pd.DataFrame()  # Création du DataFrame vide
-    
-    try:
-        for p in range(1, num_pages + 1):
-            page_url = f"{url_base}{p}"
-            res = requests.get(page_url)
-            soup = bs(res.content, 'html.parser')
-            infos = soup.find_all('div', class_='listings-cards__list-item')
-            
-            data = []  # Liste temporaire pour stocker les données de la page
-
-            for info in infos:
-                try:
-                    details = info.find('div', class_='listing-card__header__title').text.strip()
-                    etat = info.find('span', class_='listing-card__header__tags__item listing-card__header__tags__item--condition listing-card__header__tags__item--condition_new').text.strip()
-                    marque = info.find('div', class_='listing-card__header__tags').text.strip().replace(etat, '')
-                    prix = info.find('span', class_='listing-card__price').text.strip().replace('F Cfa', '').replace(' ', '')
-                    adresse = ' '.join(info.find('div', class_="listing-card__header__location").text.strip().split()).replace(',', '')
-                    image_lien = info.find('img', class_='listing-card__image__resource vh-img')['src']
-
-                    # Ajouter les données à la liste temporaire
-                    data.append({
-                        'Details': details,
-                        'État': etat,
-                        'Marque': marque,
-                        'Prix': prix,
-                        'Adresse': adresse,
-                        'Image Link': image_lien
-                    })
-                except Exception as e:
-                    print(f"Erreur lors du traitement d'une annonce : {e}")
-            time.sleep(2)  # Délai entre les requêtes pour éviter d'être bloqué
-    
-    except Exception as e:
-        print(f"Erreur lors du scraping : {e}")
+def scrape_expats_dakar(category, pages):
+    data =[]
+    for p in range(1, pages + 1):
+        url = f"{url_base}{p}"
+        driver.get(url)
+        containers = driver.find_elements(By.CSS_SELECTOR, "[class= 'listings-cards__list-item']")
+        for container in containers:
+            try:
+               
+                details=container.find_element(By.CLASS_NAME,'listing-card__header__title').text.strip()
+                etat=container.find_element(By.CSS_SELECTOR,"[class='listing-card__header__tags__item listing-card__header__tags__item--condition listing-card__header__tags__item--condition_new']").text.strip()
+                marque =container.find_element(By.CLASS_NAME, 'listing-card__header__tags').text.strip().replace(etat,'')
+                adresse =' '.join (container.find_element(By.CLASS_NAME,'listing-card__header__location')).text.strip().split().replace(',', '')
+                prix =container.find_element(By.CSS_SELECTOR,"[class='listing-card__price']").text.strip().replace('F Cfa','').replace(' ','')
+                image_lien =container.find_element(By.CSS_SELECTOR,"[class=' listing-card__image__resource vh-img ']")['src']
+                dic = {'details':details,'etat':etat,'marque':marque,'prix':prix,"adresse":adresse,"lien image":image_lien}
+                data.append(dic)
+            except:
+                pass
     return pd.DataFrame(data)
 
 
