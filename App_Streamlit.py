@@ -14,8 +14,6 @@ import plotly.express as px
 
 # Initialisation des options du navigateur Selenium
 options = Options()
-chromedriver --whitelisted-ips=""
-
 options.add_argument("--whitelisted-ips")#Autorise toutes les IPs (à restreindre si possible)
 options.add_argument("--headless")  # Mode sans interface graphique
 options.add_argument("--disable-gpu")  # Evite certains bugs d'affichage
