@@ -7,67 +7,49 @@ from scrapy.utils.project import get_project_settings
 from twisted.internet import defer
 from twisted.internet import reactor
 import threading
+from expat_scraper.items import ExpatItem
 
-class ExpatsDakarSpider(scrapy.Spider):
-    name = 'expats_dakar'
-
-    def start_requests(self):
-        categories = {
-            "Computers": "https://www.expat-dakar.com/ordinateurs?page=",
-            "Telephones": "https://www.expat-dakar.com/telephones?page=",
-            "Cinema": "https://www.expat-dakar.com/cinema?page="
-        }
-
-        for category, url in categories.items():
-            for page in range(1, 6):  # Suppose we want to scrape the first 5 pages of each category
-                yield scrapy.Request(url=f"{url}{page}", callback=self.parse, meta={'category': category})
+data=[]
+class ExpatSpider(scrapy.Spider):
+    name = "expat"
+    allowed_domains = ["www.expat-dakar.com"]
+    start_urls = [
+        "https://www.expat-dakar.com/ordinateurs?page=1",
+        "https://www.expat-dakar.com/telephones?page=1",
+        "https://www.expat-dakar.com/cinema?page=1",
+    ]
 
     def parse(self, response):
-        data = []
-        category = response.meta['category']
+        for container in response.css('.listings-cards__list-item'):
+            item = ExpatItem()
+            item['details'] = container.css('.listing-card__header__title::text').get().strip()
+            item['etat'] = container.css('.listing-card__header__tags__item--condition::text').get().strip()
+            item['marque'] = container.css('.listing-card__header__tags::text').get().strip()
+            item['prix'] = container.css('.listing-card__price::text').get().strip().replace('F Cfa', '').replace(' ', '')
+            item['adresse'] = ' '.join(container.css('.listing-card__header__location::text').get().strip().split()).replace(',', '')
+            item['image_lien'] = container.css('.listing-card__image__resource::attr(src)').get()
+            yield item
 
-        containers = response.css(".listings-cards__list-item")
-        for container in containers:
-            try:
-                details = container.css('.listing-card__header__title::text').get().strip()
-                etat = container.css(".listing-card__header__tags__item--condition_new::text").get().strip()
-                marque = container.css(".listing-card__header__tags::text").get().strip().replace(etat, '')
-                adresse = ' '.join(container.css('.listing-card__header__location::text').get().split())
-                prix = container.css(".listing-card__price::text").get().strip().replace('F Cfa', '').replace(' ', '')
-                image_lien = container.css(".listing-card__image__resource.vh-img::attr(src)").get()
-
-                dic = {
-                    'category': category,
-                    'details': details,
-                    'etat': etat,
-                    'marque': marque,
-                    'prix': prix,
-                    "adresse": adresse,
-                    "lien image": image_lien
-                }
-                
-                data.append(dic)
-            except Exception as e:
-                self.logger.error(f"Error parsing container: {e}")
-
-        yield from data
-
-        # Suivi des pages suivantes (pagination)
-        next_page = response.css('a.next::attr(href)').get()
+        # Pagination (optionnel)
+        next_page = response.css('a[rel="next"]::attr(href)').get()
         if next_page:
-            yield response.follow(next_page, callback=self.parse, meta={'category': category})
+            yield response.follow(next_page, self.parse)
 
-# Fonction pour démarrer le crawling dans un thread séparé
-def start_crawl():
-    runner = CrawlerRunner(get_project_settings())
-    runner.crawl(ExpatsDakarSpider)
-    reactor.run()
-
-# Démarrage du crawler dans un thread séparé pour éviter le problème de redémarrage du reactor
-crawl_thread = threading.Thread(target=start_crawl)
-crawl_thread.start()
-
-
+class ExpatItem(scrapy.Item):
+    details = scrapy.Field()
+    etat = scrapy.Field()
+    marque = scrapy.Field()
+    prix = scrapy.Field()
+    adresse = scrapy.Field()
+    image_lien = scrapy.Field()
+    data.append({
+                'details': details,
+                'etat': etat,
+                'marque': marque,
+                'prix': prix,
+                'adresse': adresse,
+                'image_lien': image_lien
+                    })
 
 
 # Interface Streamlit
