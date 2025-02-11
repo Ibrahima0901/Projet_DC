@@ -6,5 +6,5 @@ pandas
 streamlit
 beautifulsoup4
 selenium
-webdriver
+
 
