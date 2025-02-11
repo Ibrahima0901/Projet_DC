@@ -15,7 +15,6 @@ URLS = {
 data = []
 def scrape_expats_dakar(category, pages):
     for category, base_url in URLS.items():
-        try:
             for p in range(1, pages+1):
                 url = f"{base_url}{p}"
                 time.sleep(5)
@@ -42,7 +41,6 @@ def scrape_expats_dakar(category, pages):
                     except Exception as e:
                         print(f"Erreur lors du scraping : {e}")
                         pass
-        finally:
         return pd.DataFrame(data)
         
 # Interface Streamlit
