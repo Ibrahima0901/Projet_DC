@@ -2,13 +2,13 @@ import pandas as pd
 import streamlit as st
 import time
 from selenium import webdriver
-from selenium.webdriver.firefox.service import Service as FirefoxService
-from selenium.webdriver.firefox.options import Options
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup as bs
-from webdriver_manager.firefox import GeckoDriverManager
+from webdriver_manager.chrome import ChromeDriverManager
 import matplotlib.pyplot as plt
 import plotly.express as px
 
@@ -17,7 +17,6 @@ options = Options()
 options.add_argument("--headless")  # Mode sans interface graphique
 options.add_argument("--disable-gpu")  # Evite certains bugs d'affichage
 options.add_argument("--no-sandbox")  # Nécessaire pour exécuter en mode root
-options.binary_location = r"C:/Program Files/Mozilla Firefox/firefox.exe"
 
 # URLs des catégories
 URLS = {
@@ -33,7 +32,7 @@ def scrape_expats_dakar(category, pages):
     data = []
     
     # Initialisation de Selenium
-    driver = webdriver.Firefox(service=FirefoxService(GeckoDriverManager().install()), options=options)
+    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
     
     try:
         for p in range(1, pages + 1):
