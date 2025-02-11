@@ -1,57 +1,51 @@
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
-import scrapy
-from scrapy.crawler import CrawlerRunner
-from scrapy.utils.project import get_project_settings
-from twisted.internet import defer
-from twisted.internet import reactor
-import threading
-from scrapy  import ExpatItem
+import requests
+from bs4 import BeautifulSoup as bs
+import pandas as pd
+import time
 
-data=[]
-class ExpatSpider(scrapy.Spider):
-    name = "expat"
-    allowed_domains = ["www.expat-dakar.com"]
-    start_urls = [
-        "https://www.expat-dakar.com/ordinateurs?page=1",
-        "https://www.expat-dakar.com/telephones?page=1",
-        "https://www.expat-dakar.com/cinema?page=1",
-    ]
+URLS = {
+    "Computers": "https://www.expat-dakar.com/ordinateurs?page=",
+    "Telephones": "https://www.expat-dakar.com/telephones?page=",
+    "Cinema": "https://www.expat-dakar.com/cinema?page="
+}
 
-    def parse(self, response):
-        for container in response.css('.listings-cards__list-item'):
-            item = ExpatItem()
-            item['details'] = container.css('.listing-card__header__title::text').get().strip()
-            item['etat'] = container.css('.listing-card__header__tags__item--condition::text').get().strip()
-            item['marque'] = container.css('.listing-card__header__tags::text').get().strip()
-            item['prix'] = container.css('.listing-card__price::text').get().strip().replace('F Cfa', '').replace(' ', '')
-            item['adresse'] = ' '.join(container.css('.listing-card__header__location::text').get().strip().split()).replace(',', '')
-            item['image_lien'] = container.css('.listing-card__image__resource::attr(src)').get()
-            yield item
-
-        # Pagination (optionnel)
-        next_page = response.css('a[rel="next"]::attr(href)').get()
-        if next_page:
-            yield response.follow(next_page, self.parse)
-
-class ExpatItem(scrapy.Item):
-    details = scrapy.Field()
-    etat = scrapy.Field()
-    marque = scrapy.Field()
-    prix = scrapy.Field()
-    adresse = scrapy.Field()
-    image_lien = scrapy.Field()
-    data.append({
-                'details': details,
-                'etat': etat,
-                'marque': marque,
-                'prix': prix,
-                'adresse': adresse,
-                'image_lien': image_lien
-                    })
-
-
+data = []
+def scrape_expats_dakar(category, pages)
+    for category, base_url in URLS.items():
+        try:
+            for p in range(1, pages+1):
+                url = f"{base_url}{p}"
+                time.sleep(5)
+                response = requests.get(url)
+                Page_source = response.content
+                soup = bs(Page_source, 'html.parser')
+                infos = soup.find_all('div', class_='listings-cards__list-item')
+                for info in infos:
+                    try:
+                        # Détails de l'annonce
+                        details = info.find('div', class_='listing-card__header__title').text.strip()
+                        # État de l'annonce
+                        etat = info.find('span', class_='listing-card__header__tags__item listing-card__header__tags__item--condition listing-card__header__tags__item--condition_new').text.strip()
+                        # Marque de l'annonce
+                        marque = info.find('div', class_='listing-card__header__tags').text.strip().replace(etat,'')
+                        # Prix
+                        prix = info.find('span', class_='listing-card__price__deal').text.strip().replace('F Cfa','').replace(' ','')
+                        # Adresse
+                        adresse = ' '.join(info.find('div', class_="listing-card__header__location").text.strip().split()).replace(',', '')
+                        # Lien de l'image
+                        image_lien = info.find('img', class_='listing-card__image__resource vh-img')['src']
+                        dic = {'category': category, 'details': details, 'etat': etat, 'marque': marque, 'prix': prix, 'adresse': adresse, 'image_lien': image_lien}
+                        data.append(dic)
+                    except Exception as e:
+                        print(f"Erreur lors du scraping : {e}")
+                        pass
+        finally:
+              response.quit()
+        return pd.DataFrame(data)
+        
 # Interface Streamlit
 st.markdown("<h1 style='text-align: center; color: black;'>MY DATA SCRAPER APP</h1>", unsafe_allow_html=True)
 st.markdown("This app scrapes and downloads data from Expat-Dakar.")
