@@ -45,7 +45,7 @@ def scrape_expats_dakar(urls, pages):
                         print(f"Erreur lors du scraping : {e}")
                         pass
         browser.close()
-    return pd.DataFrame(data)
+        return pd.DataFrame(data)
 # Interface Streamlit
 st.markdown("<h1 style='text-align: center; color: black;'>MY DATA SCRAPER APP</h1>", unsafe_allow_html=True) 
 st.markdown("This app scrapes and downloads data from Expat-Dakar.")
