@@ -13,56 +13,45 @@ URLS = {
     "Cinema": "https://www.expat-dakar.com/cinema?page="
 }
 # Fonction de scraping
-def scrape_expats_dakar(category, pages):
+data=[]
+def scrape_expats_dakar(category, num_pages):
     """Scrape les annonces de la catégorie choisie sur expat-dakar.com"""
     url_base = URLS[category]
-    data = []
+    df = pd.DataFrame()  # Création du DataFrame vide
     
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-    }
+    try:
+        for p in range(1, num_pages + 1):
+            page_url = f"{url_base}{p}"
+            res = requests.get(page_url)
+            soup = bs(res.content, 'html.parser')
+            infos = soup.find_all('div', class_='listings-cards__list-item')
+            
+            data = []  # Liste temporaire pour stocker les données de la page
 
-    for p in range(1, pages + 1):
-        url = f"{url_base}{p}"
-        try:
-            response = requests.get(url, headers=headers)
-            if response.status_code != 200:
-                st.error(f"Erreur : Impossible d'accéder à la page {url}. Code de statut : {response.status_code}")
-                continue
-
-            soup = bs(response.content, 'html.parser')
-            containers = soup.find_all('div', class_='listings-cards__list-item')
-
-            if not containers:
-                st.warning(f"Aucune annonce trouvée sur la page {url}.")
-                continue
-
-            for container in containers:
+            for info in infos:
                 try:
-                    details = container.find('div', class_='listing-card__header__title').text.strip()
-                    etat = container.find('span', class_='listing-card__header__tags__item listing-card__header__tags__item--condition listing-card__header__tags__item--condition_new').text.strip()
-                    marque = container.find('div', class_='listing-card__header__tags').text.strip().replace(etat, '')
-                    prix = container.find('span', class_='listing-card__price').text.strip().replace('F Cfa', '').replace(' ', '')
-                    adresse = ' '.join(container.find('div', class_="listing-card__header__location").text.strip().split()).replace(',', '')
-                    image_lien = container.find('img', class_='listing-card__image__resource vh-img')['src']
+                    details = info.find('div', class_='listing-card__header__title').text.strip()
+                    etat = info.find('span', class_='listing-card__header__tags__item listing-card__header__tags__item--condition listing-card__header__tags__item--condition_new').text.strip()
+                    marque = info.find('div', class_='listing-card__header__tags').text.strip().replace(etat, '')
+                    prix = info.find('span', class_='listing-card__price').text.strip().replace('F Cfa', '').replace(' ', '')
+                    adresse = ' '.join(info.find('div', class_="listing-card__header__location").text.strip().split()).replace(',', '')
+                    image_lien = info.find('img', class_='listing-card__image__resource vh-img')['src']
 
+                    # Ajouter les données à la liste temporaire
                     data.append({
-                        'details': details,
-                        'etat': etat,
-                        'marque': marque,
-                        'prix': prix,
-                        'adresse': adresse,
-                        'image_lien': image_lien
+                        'Details': details,
+                        'État': etat,
+                        'Marque': marque,
+                        'Prix': prix,
+                        'Adresse': adresse,
+                        'Image Link': image_lien
                     })
-
                 except Exception as e:
-                    st.warning(f"Erreur sur une annonce : {e}")
-
-        except Exception as e:
-            st.error(f"Erreur lors du scraping de la page {url} : {e}")
-
-        time.sleep(2)  # Délai pour éviter d'être bloqué
-
+                    print(f"Erreur lors du traitement d'une annonce : {e}")
+            time.sleep(2)  # Délai entre les requêtes pour éviter d'être bloqué
+    
+    except Exception as e:
+        print(f"Erreur lors du scraping : {e}")
     return pd.DataFrame(data)
 
 
