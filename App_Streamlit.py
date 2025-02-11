@@ -7,7 +7,7 @@ from scrapy.utils.project import get_project_settings
 from twisted.internet import defer
 from twisted.internet import reactor
 import threading
-from expat_scraper.items import ExpatItem
+from scrapy  import ExpatItem
 
 data=[]
 class ExpatSpider(scrapy.Spider):
