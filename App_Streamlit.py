@@ -42,6 +42,7 @@ def scrape_expats_dakar(urls, pages):
                         image_lien = info.find('img', class_='listing-card__image__resource vh-img')['src']
                         dic = {'category': category, 'details': details, 'etat': etat, 'marque': marque, 'prix': prix, 'adresse': adresse, 'image_lien': image_lien}
                         data.append(dic)
+                    except Exception as e:
                         print(f"Erreur lors du scraping : {e}")
                         pass
         browser.close()
