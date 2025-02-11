@@ -16,8 +16,8 @@ def scrape_expats_dakar(urls, pages):
     for category, base_url in urls.items():
         for p in range(1, pages+1):
             url = f"{base_url}{p}"
-            time.sleep(5)
             response = requests.get(url)
+            time.sleep(5)
             Page_source = response.content
             soup = bs(Page_source, 'html.parser')
             infos = soup.find_all('div', class_='listings-cards__list-item')
