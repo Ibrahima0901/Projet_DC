@@ -47,14 +47,15 @@ def scrape_expats_dakar(category, pages):
         return pd.DataFrame(data)
         
 # Interface Streamlit
-st.markdown("<h1 style='text-align: center; color: black;'>MY DATA SCRAPER APP</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center; color: black;'>MY DATA SCRAPER APP</h1>", unsafe_allow_html=True) 
 st.markdown("This app scrapes and downloads data from Expat-Dakar.")
 
 st.sidebar.markdown("**User Input Features**")
 pages = st.sidebar.number_input("Number of pages to scrape", min_value=1, value=2)
 category = st.sidebar.selectbox(
     "How would you like to scrape",
-    ("Scrapy","Dashboard of the data","Fill the form"))
+    ("Selenium & beautifulSoup","Webscrapper","Dashboard of the data","Fill the form"))
+
 
 # Ajout des boutons pour chaque catégorie
 col1, col2, col3 = st.columns(3)
@@ -63,16 +64,11 @@ col1, col2, col3 = st.columns(3)
 df_computers = pd.DataFrame()
 df_phones = pd.DataFrame()
 df_cinema = pd.DataFrame()
-
-if category == "Scrapy":
+if category == "Selenium & beautifulSoup":
     with col1:
         if st.button("Scrape Computers"):
             st.write("Scraping **Computers** data... This may take a few minutes.")
-            spider = ExpatDakarSpider(category="Computers", pages=pages)
-            process = CrawlerProcess()
-            process.crawl(spider)
-            process.start()
-            df_computers = pd.DataFrame(spider.data)
+            df_computers = scrape_expats_dakar("Computers", pages)
             if not df_computers.empty:
                 st.success(f"Scraped {len(df_computers)} items!")
                 st.dataframe(df_computers)
@@ -84,11 +80,7 @@ if category == "Scrapy":
     with col2:
         if st.button("Scrape Telephones"):
             st.write("Scraping **Telephones** data... This may take a few minutes.")
-            spider = ExpatDakarSpider(category="Telephones", pages=pages)
-            process = CrawlerProcess()
-            process.crawl(spider)
-            process.start()
-            df_phones = pd.DataFrame(spider.data)
+            df_phones = scrape_expats_dakar("Telephones", pages)
             if not df_phones.empty:
                 st.success(f"Scraped {len(df_phones)} items!")
                 st.dataframe(df_phones)
@@ -100,11 +92,7 @@ if category == "Scrapy":
     with col3:
         if st.button("Scrape Cinema"):
             st.write("Scraping **Cinema** data... This may take a few minutes.")
-            spider = ExpatDakarSpider(category="Cinema", pages=pages)
-            process = CrawlerProcess()
-            process.crawl(spider)
-            process.start()
-            df_cinema = pd.DataFrame(spider.data)
+            df_cinema = scrape_expats_dakar("Cinema", pages)
             if not df_cinema.empty:
                 st.success(f"Scraped {len(df_cinema)} items!")
                 st.dataframe(df_cinema)
@@ -112,10 +100,58 @@ if category == "Scrapy":
                 st.download_button("Download Cinema Data", csv_cinema, "Cinema_data.csv", "text/csv")
             else:
                 st.warning("No data found for Cinema.")
+elif category == "Webscrapper":
+
+    def load_(dataframe, title, key):
+        if st.button(title, key=key):
+            st.subheader('Web scraping data')
+            st.write('Data dimension: ' + str(dataframe.shape[0]) + ' rows and ' + str(dataframe.shape[1]) + ' columns.')
+            
+            # Ajouter une option pour choisir le nombre de lignes à afficher
+            rows_per_page = st.selectbox('Nombre de lignes par page', options=[10, 20, 50, 100], key=f'rows_per_page_{key}')
+            
+            # Calculer le nombre total de pages
+            total_pages = (len(dataframe) // rows_per_page) + (1 if len(dataframe) % rows_per_page else 0)
+            
+            # Ajouter une option pour choisir la page à afficher
+            page_number = st.number_input('Numéro de page', min_value=1, max_value=total_pages, value=1, key=f'page_number_{key}')
+            
+            # Calculer les indices de début et de fin pour la pagination
+            start_idx = (page_number - 1) * rows_per_page
+            end_idx = start_idx + rows_per_page
+            
+            # Afficher le dataframe paginé
+            st.dataframe(dataframe.iloc[start_idx:end_idx])
+
+# Charger les données
+    load_(pd.read_csv('Data/Scrape_Ordinateur_Expat_dakar.csv'), 'Computers data', '1')
+    load_(pd.read_csv('Data/Scrape_Telephone_Expat_Dakar.csv'), 'Telephones data', '2')
+    load_(pd.read_csv('Data/Scrape_Cinema_Expat_Dakar.csv'), 'Cinema data', '3')
 
 elif category == "Dashboard of the data":
-    # Ajouter le code pour afficher les graphiques de données
-    pass
+        computer_data= pd.read_csv('Data/Scrape_Ordinateur_Expat_dakar.csv')
+        phone_data= pd.read_csv('Data/Scrape_Telephone_Expat_Dakar.csv')
+        cinema_data =pd.read_csv('Data/Scrape_Cinema_Expat_Dakar.csv')
+        if 'Prix' in computer_data.columns:
+            fig, ax = plt.subplots()
+            computer_data['Prix'].hist(bins=20, ax=ax)
+            ax.set_xlabel("Prix")
+            ax.set_ylabel("Nombre")
+            ax.set_title("Répartition des prix des ordinateurs")
+            st.pyplot(fig)
 
+        if 'Prix' in phone_data.columns:
+            st.subheader("📱 Répartition des prix des téléphones")
+            fig, ax = plt.subplots()
+            phone_data['Prix'].hist(bins=20, ax=ax, color='green', alpha=0.7)
+            ax.set_xlabel("Prix (en FCFA)")
+            ax.set_ylabel("Nombre d'annonces")
+            ax.set_title("Distribution des prix des téléphones")
+            st.pyplot(fig)
+    # Top 5 des marques les plus vendues (si colonne 'Marque' existe)
+        if 'Marque' in phone_data.columns:
+            st.subheader("🏆 Marques de téléphones les plus vendues")
+            top_brands = phone_data['Marque'].value_counts().head(5)
+            st.bar_chart(top_brands)
 elif category == "Fill the form":
     st.page_link("https://ee.kobotoolbox.org/x/OHZQDGcE", label="Google", icon="🌎")
