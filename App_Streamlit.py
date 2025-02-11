@@ -3,6 +3,7 @@ from scrapy.crawler import CrawlerRunner
 from scrapy.utils.project import get_project_settings
 from twisted.internet import defer
 from twisted.internet import reactor
+import threading
 
 class ExpatsDakarSpider(scrapy.Spider):
     name = 'expats_dakar'
@@ -53,17 +54,15 @@ class ExpatsDakarSpider(scrapy.Spider):
         if next_page:
             yield response.follow(next_page, callback=self.parse, meta={'category': category})
 
-# Initialisation du CrawlerRunner
-runner = CrawlerRunner(get_project_settings())
+# Fonction pour démarrer le crawling dans un thread séparé
+def start_crawl():
+    runner = CrawlerRunner(get_project_settings())
+    runner.crawl(ExpatsDakarSpider)
+    reactor.run()
 
-# Démarrer le crawling
-@defer.inlineCallbacks
-def crawl():
-    yield runner.crawl(ExpatsDakarSpider)
-
-# Exécution du crawler sans interférer avec Streamlit
-crawl().addCallback(lambda _: reactor.stop())
-reactor.run()
+# Démarrage du crawler dans un thread séparé pour éviter le problème de redémarrage du reactor
+crawl_thread = threading.Thread(target=start_crawl)
+crawl_thread.start()
 
 
 
