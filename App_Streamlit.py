@@ -22,7 +22,7 @@ chrome_options.add_argument("--disable-gpu")  # Désactive l'accélération GPU
 chrome_options.add_argument("--window-size=1920x1080")  # Définit une résolution correcte
 
 # Démarrer le WebDriver avec les options
-#service = Service(ChromeDriverManager().install())
+service = Service(ChromeDriverManager().install())
 
 # URLs des catégories
 URLS = {
@@ -38,7 +38,7 @@ def scrape_expats_dakar(category, pages):
     data = []
     
     # Initialisation de Selenium
-    driver = webdriver.Chrome(service=Service(ChromeDriverManager(version="114.0.5735.90").install()), options=options)
+    driver = webdriver.Chrome(service=service, options=chrome_options)
 
     
     try:
