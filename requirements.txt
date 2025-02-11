@@ -3,5 +3,4 @@ selenium
 BeautifulSoup4
 webdriver_manager
 matplotlib
-time
 plotly
