@@ -5,6 +5,5 @@ matplotlib
 pandas
 streamlit
 beautifulsoup4
-playwright
 selenium
 webdriver
