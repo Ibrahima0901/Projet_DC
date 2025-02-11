@@ -15,6 +15,7 @@ import plotly.express as px
 # Initialisation des options du navigateur Selenium
 options = Options()
 options.add_argument("--headless")  # Mode sans interface graphique
+options.add_argument('--disable-dev-shm-usage')
 options.add_argument("--disable-gpu")  # Evite certains bugs d'affichage
 options.add_argument("--no-sandbox")  # Nécessaire pour exécuter en mode root
 
@@ -32,7 +33,8 @@ def scrape_expats_dakar(category, pages):
     data = []
     
     # Initialisation de Selenium
-    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+   driver = webdriver.Chrome(service=Service(ChromeDriverManager(version="VERSION_CHROME").install()), options=options)
+
     
     try:
         for p in range(1, pages + 1):
