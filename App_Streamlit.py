@@ -1,8 +1,10 @@
 import pandas as pd
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.options import Options
 import streamlit as st
 import requests
 from requests import get
-from bs4 import BeautifulSoup as bs
 import matplotlib.pyplot as plt
 import time
 
