@@ -1,3 +1,4 @@
+pip install selenium webdriver-manager
 import pandas as pd
 import streamlit as st
 import time
@@ -13,10 +14,16 @@ import matplotlib.pyplot as plt
 import plotly.express as px
 
 # Initialisation des options du navigateur Selenium
-options = Options()
-options.add_argument("--headless")  # Mode sans interface graphique
-options.add_argument("--disable-gpu")  # Evite certains bugs d'affichage
-options.add_argument("--no-sandbox")  # Nécessaire pour exécuter en mode root
+# Configurer Chrome en mode headless
+chrome_options = Options()
+chrome_options.add_argument("--headless")  # Mode sans interface
+chrome_options.add_argument("--no-sandbox")  # Évite des erreurs sur les serveurs
+chrome_options.add_argument("--disable-dev-shm-usage")  # Évite les problèmes de mémoire partagée
+chrome_options.add_argument("--disable-gpu")  # Désactive l'accélération GPU
+chrome_options.add_argument("--window-size=1920x1080")  # Définit une résolution correcte
+
+# Démarrer le WebDriver avec les options
+#service = Service(ChromeDriverManager().install())
 
 # URLs des catégories
 URLS = {
@@ -32,7 +39,8 @@ def scrape_expats_dakar(category, pages):
     data = []
     
     # Initialisation de Selenium
-    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+    driver = webdriver.Chrome(service=Service(ChromeDriverManager(version="114.0.5735.90").install()), options=options)
+
     
     try:
         for p in range(1, pages + 1):
@@ -157,14 +165,14 @@ elif category == "Webscrapper":
             st.dataframe(dataframe.iloc[start_idx:end_idx])
 
 # Charger les données
-    load_(pd.read_csv('C:/Users/iboug/OneDrive/Bureau/Projet_Test/data/Scrape_Ordinateur_Expat_dakar.csv'), 'Computers data', '1')
-    load_(pd.read_csv('C:/Users/iboug/OneDrive/Bureau/Projet_Test/data/Scrape_Telephone_Expat_Dakar.csv'), 'Telephones data', '2')
-    load_(pd.read_csv('C:/Users/iboug/OneDrive/Bureau/Projet_Test/data/Scrape_Cinema_Expat_Dakar.csv'), 'Cinema data', '3')
+    load_(pd.read_csv('Data/Scrape_Ordinateur_Expat_dakar.csv'), 'Computers data', '1')
+    load_(pd.read_csv('Data/Scrape_Telephone_Expat_Dakar.csv'), 'Telephones data', '2')
+    load_(pd.read_csv('Data/Scrape_Cinema_Expat_Dakar.csv'), 'Cinema data', '3')
 
 elif category == "Dashboard of the data":
-        computer_data= pd.read_csv('C:/Users/iboug/OneDrive/Bureau/Projet_Test/data/Scrape_Ordinateur_Expat_dakar.csv')
-        phone_data= pd.read_csv('C:/Users/iboug/OneDrive/Bureau/Projet_Test/data/Scrape_Telephone_Expat_Dakar.csv')
-        cinema_data =pd.read_csv('C:/Users/iboug/OneDrive/Bureau/Projet_Test/data/Scrape_Cinema_Expat_Dakar.csv')
+        computer_data= pd.read_csv('Data/Scrape_Ordinateur_Expat_dakar.csv')
+        phone_data= pd.read_csv('Data/Scrape_Telephone_Expat_Dakar.csv')
+        cinema_data =pd.read_csv('Data/Scrape_Cinema_Expat_Dakar.csv')
         if 'Prix' in computer_data.columns:
             fig, ax = plt.subplots()
             computer_data['Prix'].hist(bins=20, ax=ax)
