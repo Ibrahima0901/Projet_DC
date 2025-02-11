@@ -18,38 +18,37 @@ def scrape_expats_dakar(category, pages):
     """Scrape les annonces de la catégorie choisie sur expat-dakar.com"""
     url_base = URLS[category]
     data = []
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'}
+    
     for p in range(1, pages + 1):
         url = f"{url_base}{p}"
         time.sleep(5)
-        response = requests.get(url)
+        response = requests.get(url, headers=headers)
         soup = bs(response.content, 'html.parser')
         infos = soup.find_all('div', class_='listings-cards__list-item')
     
         for info in infos:
             try:
                 details = info.find('div', class_='listing-card__header__title').text.strip()
-                # État de l'annonce
                 etat = info.find('span', class_='listing-card__header__tags__item listing-card__header__tags__item--condition listing-card__header__tags__item--condition_new').text.strip()
-                # Marque de l'annonce
-                marque = info.find('div', class_='listing-card__header__tags').text.strip().replace(etat,'')
-                # Prix
-                prix = info.find('span', class_='listing-card__price').text.strip().replace('F Cfa','').replace(' ','')
-                # Adresse
+                marque = info.find('div', class_='listing-card__header__tags').text.strip().replace(etat, '')
+                prix = info.find('span', class_='listing-card__price').text.strip().replace('F Cfa', '').replace(' ', '')
                 adresse = ' '.join(info.find('div', class_="listing-card__header__location").text.strip().split()).replace(',', '')
-                # Lien de l'image
                 image_lien = info.find('img', class_='listing-card__image__resource vh-img')['src']
                 data.append({
-                        'details': details,
-                        'etat': etat,
-                        'marque': marque,
-                        'prix': prix,
-                        'adresse': adresse,
-                        'image_lien': image_lien
-                    })
-            except :
-                 pass
+                    'details': details,
+                    'etat': etat,
+                    'marque': marque,
+                    'prix': prix,
+                    'adresse': adresse,
+                    'image_lien': image_lien
+                })
+            except Exception as e:
+                print(f"Erreur lors du traitement de l'annonce: {e}")
 
     return pd.DataFrame(data)
+
 
 # Interface Streamlit
 st.markdown("<h1 style='text-align: center; color: black;'>MY DATA SCRAPER APP</h1>", unsafe_allow_html=True) 
