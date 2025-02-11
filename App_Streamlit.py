@@ -17,6 +17,7 @@ options = Options()
 options.add_argument("--headless")  # Mode sans interface graphique
 options.add_argument("--disable-gpu")  # Evite certains bugs d'affichage
 options.add_argument("--no-sandbox")  # Nécessaire pour exécuter en mode root
+options.binary_location = r"C:/Program Files/Mozilla Firefox/firefox.exe"
 
 # URLs des catégories
 URLS = {
