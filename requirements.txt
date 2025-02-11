@@ -1,10 +1,7 @@
-bs4
-requests
-matplotlib
 pandas
-streamlit
-beautifulsoup4
 selenium
+BeautifulSoup4
 webdriver_manager
+matplotlib
 time
 plotly
