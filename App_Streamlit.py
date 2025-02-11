@@ -2,18 +2,17 @@ import pandas as pd
 import streamlit as st
 import time
 from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.firefox.service import Service as FirefoxService
+from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup as bs
-
-from webdriver_manager.chrome import ChromeDriverManager
+from webdriver_manager.firefox import GeckoDriverManager
 import matplotlib.pyplot as plt
 import plotly.express as px
 
-# Initialisation des options du navigateur Selenium
+# Initialisation des options du navigateur Selenium pour Firefox
 options = Options()
 options.add_argument("--headless")  # Mode sans interface graphique
 options.add_argument('--disable-dev-shm-usage')
@@ -33,10 +32,8 @@ def scrape_expats_dakar(category, pages):
     url_base = URLS[category]
     data = []
     
-    # Initialisation de Selenium
-    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
-
-
+    # Initialisation de Selenium avec Firefox
+    driver = webdriver.Firefox(service=FirefoxService(GeckoDriverManager().install()), options=options)
     
     try:
         for p in range(1, pages + 1):
@@ -93,7 +90,6 @@ category = st.sidebar.selectbox(
     "How would you like to scrape",
     ("Selenium & beautifulSoup","Webscrapper","Dashboard of the data","Fill the form"))
 
-
 # Ajout des boutons pour chaque catégorie
 col1, col2, col3 = st.columns(3)
 
@@ -137,58 +133,3 @@ if category == "Selenium & beautifulSoup":
                 st.download_button("Download Cinema Data", csv_cinema, "Cinema_data.csv", "text/csv")
             else:
                 st.warning("No data found for Cinema.")
-elif category == "Webscrapper":
-
-    def load_(dataframe, title, key):
-        if st.button(title, key=key):
-            st.subheader('Web scraping data')
-            st.write('Data dimension: ' + str(dataframe.shape[0]) + ' rows and ' + str(dataframe.shape[1]) + ' columns.')
-            
-            # Ajouter une option pour choisir le nombre de lignes à afficher
-            rows_per_page = st.selectbox('Nombre de lignes par page', options=[10, 20, 50, 100], key=f'rows_per_page_{key}')
-            
-            # Calculer le nombre total de pages
-            total_pages = (len(dataframe) // rows_per_page) + (1 if len(dataframe) % rows_per_page else 0)
-            
-            # Ajouter une option pour choisir la page à afficher
-            page_number = st.number_input('Numéro de page', min_value=1, max_value=total_pages, value=1, key=f'page_number_{key}')
-            
-            # Calculer les indices de début et de fin pour la pagination
-            start_idx = (page_number - 1) * rows_per_page
-            end_idx = start_idx + rows_per_page
-            
-            # Afficher le dataframe paginé
-            st.dataframe(dataframe.iloc[start_idx:end_idx])
-
-# Charger les données
-    load_(pd.read_csv('C:/Users/iboug/OneDrive/Bureau/Projet_Test/data/Scrape_Ordinateur_Expat_dakar.csv'), 'Computers data', '1')
-    load_(pd.read_csv('C:/Users/iboug/OneDrive/Bureau/Projet_Test/data/Scrape_Telephone_Expat_Dakar.csv'), 'Telephones data', '2')
-    load_(pd.read_csv('C:/Users/iboug/OneDrive/Bureau/Projet_Test/data/Scrape_Cinema_Expat_Dakar.csv'), 'Cinema data', '3')
-
-elif category == "Dashboard of the data":
-        computer_data= pd.read_csv('C:/Users/iboug/OneDrive/Bureau/Projet_Test/data/Scrape_Ordinateur_Expat_dakar.csv')
-        phone_data= pd.read_csv('C:/Users/iboug/OneDrive/Bureau/Projet_Test/data/Scrape_Telephone_Expat_Dakar.csv')
-        cinema_data =pd.read_csv('C:/Users/iboug/OneDrive/Bureau/Projet_Test/data/Scrape_Cinema_Expat_Dakar.csv')
-        if 'Prix' in computer_data.columns:
-            fig, ax = plt.subplots()
-            computer_data['Prix'].hist(bins=20, ax=ax)
-            ax.set_xlabel("Prix")
-            ax.set_ylabel("Nombre")
-            ax.set_title("Répartition des prix des ordinateurs")
-            st.pyplot(fig)
-
-        if 'Prix' in phone_data.columns:
-            st.subheader("📱 Répartition des prix des téléphones")
-            fig, ax = plt.subplots()
-            phone_data['Prix'].hist(bins=20, ax=ax, color='green', alpha=0.7)
-            ax.set_xlabel("Prix (en FCFA)")
-            ax.set_ylabel("Nombre d'annonces")
-            ax.set_title("Distribution des prix des téléphones")
-            st.pyplot(fig)
-    # Top 5 des marques les plus vendues (si colonne 'Marque' existe)
-        if 'Marque' in phone_data.columns:
-            st.subheader("🏆 Marques de téléphones les plus vendues")
-            top_brands = phone_data['Marque'].value_counts().head(5)
-            st.bar_chart(top_brands)
-elif category == "Fill the form":
-    st.page_link("https://ee.kobotoolbox.org/x/OHZQDGcE", label="Google", icon="🌎")
