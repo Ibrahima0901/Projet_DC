@@ -8,7 +8,7 @@ streamlit
 ChromeDriverManager
 seaborn
 pybase64
-BeautifulSoup as bs
+BeautifulSoup 
 webdriver_manager 
 matplotlib
 plotly
