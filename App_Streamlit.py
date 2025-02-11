@@ -1,3 +1,6 @@
+import streamlit as st
+import pandas as pd
+import matplotlib.pyplot as plt
 import scrapy
 from scrapy.crawler import CrawlerRunner
 from scrapy.utils.project import get_project_settings
