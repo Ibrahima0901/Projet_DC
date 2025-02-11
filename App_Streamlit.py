@@ -33,7 +33,8 @@ def scrape_expats_dakar(category, pages):
     data = []
     
     # Initialisation de Selenium
-    driver = webdriver.Chrome(service=Service(ChromeDriverManager(version="VERSION_CHROME").install()), options=options)
+    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+
 
     
     try:
