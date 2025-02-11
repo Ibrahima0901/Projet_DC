@@ -1,28 +1,8 @@
 import pandas as pd
 import streamlit as st
-import time
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+import requests
 from bs4 import BeautifulSoup as bs
-from webdriver_manager.chrome import ChromeDriverManager
 import matplotlib.pyplot as plt
-import plotly.express as px
-
-# Initialisation des options du navigateur Selenium
-# Configurer Chrome en mode headless
-chrome_options = Options()
-chrome_options.add_argument("--headless")  # Mode sans interface
-chrome_options.add_argument("--no-sandbox")  # Évite des erreurs sur les serveurs
-chrome_options.add_argument("--disable-dev-shm-usage")  # Évite les problèmes de mémoire partagée
-chrome_options.add_argument("--disable-gpu")  # Désactive l'accélération GPU
-chrome_options.add_argument("--window-size=1920x1080")  # Définit une résolution correcte
-
-# Démarrer le WebDriver avec les options
-service = Service(ChromeDriverManager().install())
 
 # URLs des catégories
 URLS = {
@@ -37,52 +17,38 @@ def scrape_expats_dakar(category, pages):
     url_base = URLS[category]
     data = []
     
-    # Initialisation de Selenium
-    driver = webdriver.Chrome(service=service, options=chrome_options)
+    for p in range(1, pages + 1):
+        url = f"{url_base}{p}"
+        response = requests.get(url)
+        soup = bs(response.content, 'html.parser')
+        infos = soup.find_all('div', class_='listings-cards__list-item')
 
-    
-    try:
-        for p in range(1, pages + 1):
-            url = f"{url_base}{p}"
-            driver.get(url)
-            time.sleep(5)  # Pause pour permettre le chargement complet de la page
-            
-            # Attendre que les annonces soient visibles
-            WebDriverWait(driver, 20).until(
-                EC.presence_of_element_located((By.CLASS_NAME, "listings-cards__list-item"))
-            )
-            
-            soup = bs(driver.page_source, 'html.parser')
-            infos = soup.find_all('div', class_='listings-cards__list-item')
+        for info in infos:
+            try:
+                details = info.find('div', class_='listing-card__header__title').text.strip()
+                # État de l'annonce
+                etat = info.find('span', class_='listing-card__header__tags__item listing-card__header__tags__item--condition listing-card__header__tags__item--condition_new').text.strip()
+                # Marque de l'annonce
+                marque = info.find('div', class_='listing-card__header__tags').text.strip().replace(etat,'')
+                # Prix
+                prix = info.find('span', class_='listing-card__price').text.strip().replace('F Cfa','').replace(' ','')
+                # Adresse
+                adresse = ' '.join(info.find('div', class_="listing-card__header__location").text.strip().split()).replace(',', '')
+                # Lien de l'image
+                image_lien = info.find('img', class_='listing-card__image__resource vh-img')['src']
 
-            for info in infos:
-                try:
-                    details = info.find('div', class_='listing-card__header__title').text.strip()
-                    # État de l'annonce
-                    etat = info.find('span', class_='listing-card__header__tags__item listing-card__header__tags__item--condition listing-card__header__tags__item--condition_new').text.strip()
-                    # Marque de l'annonce
-                    marque =info.find('div', class_='listing-card__header__tags').text.strip().replace(etat,'')
-                    # Prix
-                    prix = info.find('span', class_='listing-card__price').text.strip().replace('F Cfa','').replace(' ','')
-                    # Adresse
-                    adresse = ' '.join(info.find('div', class_="listing-card__header__location").text.strip().split()).replace(',', '')
-                    # Lien de l'image
-                    image_lien = info.find('img', class_='listing-card__image__resource vh-img')['src']
+                data.append({
+                    'details': details,
+                    'etat': etat,
+                    'marque': marque,
+                    'prix': prix,
+                    'adresse': adresse,
+                    'image_lien': image_lien
+                })
 
-                    data.append({
-                        'details': details,
-                        'etat': etat,
-                        'marque': marque,
-                        'prix': prix,
-                        'adresse': adresse,
-                        'image_lien': image_lien
-                    })
-
-                except Exception as e:
-                    print(f"Erreur lors du scraping : {e}")
-                    pass
-    finally:
-        driver.quit()  # Fermer Selenium après exécution
+            except Exception as e:
+                print(f"Erreur lors du scraping : {e}")
+                pass
 
     return pd.DataFrame(data)
 
@@ -96,7 +62,6 @@ category = st.sidebar.selectbox(
     "How would you like to scrape",
     ("Selenium & beautifulSoup","Webscrapper","Dashboard of the data","Fill the form"))
 
-
 # Ajout des boutons pour chaque catégorie
 col1, col2, col3 = st.columns(3)
 
@@ -104,6 +69,7 @@ col1, col2, col3 = st.columns(3)
 df_computers = pd.DataFrame()
 df_phones = pd.DataFrame()
 df_cinema = pd.DataFrame()
+
 if category == "Selenium & beautifulSoup":
     with col1:
         if st.button("Scrape Computers"):
@@ -140,8 +106,8 @@ if category == "Selenium & beautifulSoup":
                 st.download_button("Download Cinema Data", csv_cinema, "Cinema_data.csv", "text/csv")
             else:
                 st.warning("No data found for Cinema.")
-elif category == "Webscrapper":
 
+elif category == "Webscrapper":
     def load_(dataframe, title, key):
         if st.button(title, key=key):
             st.subheader('Web scraping data')
@@ -163,35 +129,37 @@ elif category == "Webscrapper":
             # Afficher le dataframe paginé
             st.dataframe(dataframe.iloc[start_idx:end_idx])
 
-# Charger les données
+    # Charger les données
     load_(pd.read_csv('Data/Scrape_Ordinateur_Expat_dakar.csv'), 'Computers data', '1')
     load_(pd.read_csv('Data/Scrape_Telephone_Expat_Dakar.csv'), 'Telephones data', '2')
     load_(pd.read_csv('Data/Scrape_Cinema_Expat_Dakar.csv'), 'Cinema data', '3')
 
 elif category == "Dashboard of the data":
-        computer_data= pd.read_csv('Data/Scrape_Ordinateur_Expat_dakar.csv')
-        phone_data= pd.read_csv('Data/Scrape_Telephone_Expat_Dakar.csv')
-        cinema_data =pd.read_csv('Data/Scrape_Cinema_Expat_Dakar.csv')
-        if 'Prix' in computer_data.columns:
-            fig, ax = plt.subplots()
-            computer_data['Prix'].hist(bins=20, ax=ax)
-            ax.set_xlabel("Prix")
-            ax.set_ylabel("Nombre")
-            ax.set_title("Répartition des prix des ordinateurs")
-            st.pyplot(fig)
+    computer_data = pd.read_csv('Data/Scrape_Ordinateur_Expat_dakar.csv')
+    phone_data = pd.read_csv('Data/Scrape_Telephone_Expat_Dakar.csv')
+    cinema_data = pd.read_csv('Data/Scrape_Cinema_Expat_Dakar.csv')
 
-        if 'Prix' in phone_data.columns:
-            st.subheader("📱 Répartition des prix des téléphones")
-            fig, ax = plt.subplots()
-            phone_data['Prix'].hist(bins=20, ax=ax, color='green', alpha=0.7)
-            ax.set_xlabel("Prix (en FCFA)")
-            ax.set_ylabel("Nombre d'annonces")
-            ax.set_title("Distribution des prix des téléphones")
-            st.pyplot(fig)
-    # Top 5 des marques les plus vendues (si colonne 'Marque' existe)
-        if 'Marque' in phone_data.columns:
-            st.subheader("🏆 Marques de téléphones les plus vendues")
-            top_brands = phone_data['Marque'].value_counts().head(5)
-            st.bar_chart(top_brands)
+    if 'Prix' in computer_data.columns:
+        fig, ax = plt.subplots()
+        computer_data['Prix'].hist(bins=20, ax=ax)
+        ax.set_xlabel("Prix")
+        ax.set_ylabel("Nombre")
+        ax.set_title("Répartition des prix des ordinateurs")
+        st.pyplot(fig)
+
+    if 'Prix' in phone_data.columns:
+        st.subheader("📱 Répartition des prix des téléphones")
+        fig, ax = plt.subplots()
+        phone_data['Prix'].hist(bins=20, ax=ax, color='green', alpha=0.7)
+        ax.set_xlabel("Prix (en FCFA)")
+        ax.set_ylabel("Nombre d'annonces")
+        ax.set_title("Distribution des prix des téléphones")
+        st.pyplot(fig)
+
+    if 'Marque' in phone_data.columns:
+        st.subheader("🏆 Marques de téléphones les plus vendues")
+        top_brands = phone_data['Marque'].value_counts().head(5)
+        st.bar_chart(top_brands)
+
 elif category == "Fill the form":
     st.page_link("https://ee.kobotoolbox.org/x/OHZQDGcE", label="Google", icon="🌎")
