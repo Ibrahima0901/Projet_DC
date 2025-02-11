@@ -4,6 +4,10 @@ import matplotlib.pyplot as plt
 import requests
 from bs4 import BeautifulSoup as bs
 import time
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 URLS = {
     "Computers": "https://www.expat-dakar.com/ordinateurs?page=",
@@ -11,14 +15,17 @@ URLS = {
     "Cinema": "https://www.expat-dakar.com/cinema?page="
 }
 
-def scrape_expats_dakar(urls, pages):
+def scrape_expats_dakar_selenium(urls, pages):
     data = []
+    driver = webdriver.Chrome()  # Assurez-vous d'avoir installé le bon driver pour votre navigateur
     for category, base_url in urls.items():
         for p in range(1, pages+1):
             url = f"{base_url}{p}"
-            response = requests.get(url)
             time.sleep(5)
-            Page_source = response.content
+            driver.get(url)
+            Page_source = driver.page_source
+            WebDriverWait(driver, 10).until(
+                EC.presence_of_element_located((By.CLASS_NAME, "listings-cards__list-item")))
             soup = bs(Page_source, 'html.parser')
             infos = soup.find_all('div', class_='listings-cards__list-item')
             for info in infos:
@@ -40,6 +47,7 @@ def scrape_expats_dakar(urls, pages):
                 except Exception as e:
                     print(f"Erreur lors du scraping : {e}")
                     pass
+    driver.quit()
     return pd.DataFrame(data)
 
 # Interface Streamlit
@@ -64,7 +72,7 @@ if category == "Selenium & beautifulSoup":
     with col1:
         if st.button("Scrape Computers"):
             st.write("Scraping **Computers** data... This may take a few minutes.")
-            df_computers = scrape_expats_dakar({"Computers": URLS["Computers"]}, pages)
+            df_computers = scrape_expats_dakar_selenium({"Computers": URLS["Computers"]}, pages)
             if not df_computers.empty:
                 st.success(f"Scraped {len(df_computers)} items!")
                 st.dataframe(df_computers)
@@ -76,7 +84,7 @@ if category == "Selenium & beautifulSoup":
     with col2:
         if st.button("Scrape Telephones"):
             st.write("Scraping **Telephones** data... This may take a few minutes.")
-            df_phones = scrape_expats_dakar({"Telephones": URLS["Telephones"]}, pages)
+            df_phones = scrape_expats_dakar_selenium({"Telephones": URLS["Telephones"]}, pages)
             if not df_phones.empty:
                 st.success(f"Scraped {len(df_phones)} items!")
                 st.dataframe(df_phones)
@@ -88,7 +96,7 @@ if category == "Selenium & beautifulSoup":
     with col3:
         if st.button("Scrape Cinema"):
             st.write("Scraping **Cinema** data... This may take a few minutes.")
-            df_cinema = scrape_expats_dakar({"Cinema": URLS["Cinema"]}, pages)
+            df_cinema = scrape_expats_dakar_selenium({"Cinema": URLS["Cinema"]}, pages)
             if not df_cinema.empty:
                 st.success(f"Scraped {len(df_cinema)} items!")
                 st.dataframe(df_cinema)
@@ -126,9 +134,9 @@ elif category == "Webscrapper":
     load_(pd.read_csv('Data/Scrape_Cinema_Expat_Dakar.csv'), 'Cinema data', '3')
 
 elif category == "Dashboard of the data":
-    computer_data= pd.read_csv('Data/Scrape_Ordinateur_Expat_dakar.csv')
-    phone_data= pd.read_csv('Data/Scrape_Telephone_Expat_Dakar.csv')
-    cinema_data =pd.read_csv('Data/Scrape_Cinema_Expat_Dakar.csv')
+    computer_data = pd.read_csv('Data/Scrape_Ordinateur_Expat_dakar.csv')
+    phone_data = pd.read_csv('Data/Scrape_Telephone_Expat_Dakar.csv')
+    cinema_data = pd.read_csv('Data/Scrape_Cinema_Expat_Dakar.csv')
 
     if 'Prix' in computer_data.columns:
         fig, ax = plt.subplots()
