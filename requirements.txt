@@ -1,0 +1,15 @@
+numpy
+bs4
+requests
+scipy
+matplotlib
+pandas
+streamlit
+ChromeDriverManager
+seaborn
+pybase64
+BeautifulSoup as bs
+webdriver_manager 
+matplotlib
+plotly
+
